@@ -1,32 +1,46 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import css from "./NoteForm.module.css";
 import { useNoteStore } from "@/lib/store/noteStore";
-import { createNoteAction } from "@/lib/actions/createNoteAction";
+import { createNote } from "@/lib/api/clientApi";
 
 export default function NoteForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const draft = useNoteStore((s) => s.draft);
   const setDraft = useNoteStore((s) => s.setDraft);
   const clearDraft = useNoteStore((s) => s.clearDraft);
 
-  async function handleSubmit(formData: FormData) {
-    await createNoteAction(formData); // серверная функция
-    clearDraft();
-    router.back();
+  const mutation = useMutation({
+    mutationFn: createNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      clearDraft();
+      router.back();
+    },
+  });
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    mutation.mutate({
+      title: draft.title,
+      content: draft.content,
+      tag: draft.tag,
+    });
   }
 
   return (
-    <form className={css.form} action={handleSubmit}>
+    <form className={css.form} onSubmit={handleSubmit}>
       <fieldset className={css.formGroup}>
         <label htmlFor="title">Title</label>
         <input
           id="title"
-          name="title"
           type="text"
-          defaultValue={draft.title}
+          value={draft.title}
           className={css.input}
           onChange={(e) => setDraft({ title: e.target.value })}
           required
@@ -37,9 +51,8 @@ export default function NoteForm() {
         <label htmlFor="content">Content</label>
         <textarea
           id="content"
-          name="content"
           rows={8}
-          defaultValue={draft.content}
+          value={draft.content}
           className={css.textarea}
           onChange={(e) => setDraft({ content: e.target.value })}
         />
@@ -49,8 +62,7 @@ export default function NoteForm() {
         <label htmlFor="tag">Tag</label>
         <select
           id="tag"
-          name="tag"
-          defaultValue={draft.tag}
+          value={draft.tag}
           className={css.select}
           onChange={(e) => setDraft({ tag: e.target.value })}
         >
@@ -71,7 +83,11 @@ export default function NoteForm() {
           Cancel
         </button>
 
-        <button type="submit" className={css.submitButton}>
+        <button
+          type="submit"
+          className={css.submitButton}
+          disabled={mutation.isPending}
+        >
           Create note
         </button>
       </div>
