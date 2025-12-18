@@ -1,34 +1,44 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { checkSession } from "@/lib/api/serverApi";
 
 const PRIVATE_ROUTES = ["/notes", "/profile"];
 const AUTH_ROUTES = ["/sign-in", "/sign-up"];
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  // Проверяем, есть ли cookie сессии
-  const isAuthenticated =
-    request.cookies.has("session") || request.cookies.has("refresh");
+  const accessToken = req.cookies.get("accessToken")?.value;
+  const refreshToken = req.cookies.get("refreshToken")?.value;
 
-  // ❌ Неавторизованный → приватные маршруты
-  if (
-    !isAuthenticated &&
-    PRIVATE_ROUTES.some((route) => pathname.startsWith(route))
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/sign-in";
-    return NextResponse.redirect(url);
+  const isPrivateRoute = PRIVATE_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+
+  let isAuthenticated = Boolean(accessToken);
+
+  // 🔹 нет accessToken, но есть refreshToken → пробуем checkSession
+  if (!accessToken && refreshToken) {
+    try {
+      const response = await checkSession();
+
+      if (response.status === 200 && response.data !== null) {
+        isAuthenticated = true;
+      }
+    } catch {
+      isAuthenticated = false;
+    }
   }
 
-  // ❌ Авторизованный → auth-маршруты
-  if (
-    isAuthenticated &&
-    AUTH_ROUTES.some((route) => pathname.startsWith(route))
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/profile";
-    return NextResponse.redirect(url);
+  // 🔒 неавторизованный → private → sign-in
+  if (isPrivateRoute && !isAuthenticated) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+
+  // 🔁 авторизованный → auth → /
+  if (isAuthRoute && isAuthenticated) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();

@@ -3,46 +3,45 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { getMe, updateMe } from "@/lib/api/clientApi";
 import css from "./EditProfilePage.module.css";
+
+import { getMe, updateMe } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import type { User } from "@/types/user";
 
 export default function EditProfilePage() {
   const router = useRouter();
 
+  const setUser = useAuthStore((s) => s.setUser);
+
+  const [user, setLocalUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchUser() {
-      try {
-        const user = await getMe();
-
-        setUsername(user.username);
-        setEmail(user.email);
-        setAvatar(user.avatar);
-      } finally {
-        setLoading(false);
-      }
+      const currentUser = await getMe();
+      setLocalUser(currentUser);
+      setUsername(currentUser.username);
     }
 
     fetchUser();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    await updateMe(username);
+    if (!username.trim()) return;
+
+    const updatedUser = await updateMe(username);
+
+    // ✅ КЛЮЧЕВОЙ ПУНКТ ФИДБЕКА
+    setUser(updatedUser);
+
     router.push("/profile");
   }
 
-  function handleCancel() {
-    router.push("/profile");
-  }
-
-  if (loading) {
-    return <div>Loading...</div>;
+  if (!user) {
+    return null;
   }
 
   return (
@@ -51,7 +50,7 @@ export default function EditProfilePage() {
         <h1 className={css.formTitle}>Edit Profile</h1>
 
         <Image
-          src={avatar}
+          src={user.avatar}
           alt="User Avatar"
           width={120}
           height={120}
@@ -67,11 +66,10 @@ export default function EditProfilePage() {
               className={css.input}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              required
             />
           </div>
 
-          <p>Email: {email}</p>
+          <p>Email: {user.email}</p>
 
           <div className={css.actions}>
             <button type="submit" className={css.saveButton}>
@@ -80,7 +78,7 @@ export default function EditProfilePage() {
             <button
               type="button"
               className={css.cancelButton}
-              onClick={handleCancel}
+              onClick={() => router.push("/profile")}
             >
               Cancel
             </button>

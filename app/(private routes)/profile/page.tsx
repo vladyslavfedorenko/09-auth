@@ -1,20 +1,17 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import Image from "next/image";
-import { getMe } from "@/lib/api/serverApi";
 import css from "./ProfilePage.module.css";
-import { redirect } from "next/navigation";
+import { getMe } from "@/lib/api/serverApi";
 
-export const metadata = {
-  title: "Profile",
+export const metadata: Metadata = {
+  title: "Profile | NoteHub",
   description: "User profile page",
 };
 
 export default async function ProfilePage() {
-  const user = await getMe();
-
-  // На всякий случай: если сессия пропала
-  if (!user) {
-    redirect("/sign-in");
-  }
+  const response = await getMe();
+  const user = response.data;
 
   return (
     <main className={css.mainContent}>
@@ -22,9 +19,10 @@ export default async function ProfilePage() {
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
 
-          <a href="/profile/edit" className={css.editProfileButton}>
+          {/* ✔ Link вместо <a> */}
+          <Link href="/profile/edit" className={css.editProfileButton}>
             Edit Profile
-          </a>
+          </Link>
         </div>
 
         <div className={css.avatarWrapper}>

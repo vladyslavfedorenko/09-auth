@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { checkSession } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
 
-export default function AuthProvider({
-  children,
-}: {
+interface AuthProviderProps {
   children: React.ReactNode;
-}) {
-  const setUser = useAuthStore((state) => state.setUser);
-  const clearIsAuthenticated = useAuthStore(
-    (state) => state.clearIsAuthenticated
-  );
+}
 
-  const [loading, setLoading] = useState(true);
+export default function AuthProvider({ children }: AuthProviderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const setUser = useAuthStore((s) => s.setUser);
+  const clearIsAuthenticated = useAuthStore((s) => s.clearIsAuthenticated);
+
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     async function initAuth() {
@@ -29,15 +31,18 @@ export default function AuthProvider({
       } catch {
         clearIsAuthenticated();
       } finally {
-        setLoading(false);
+        // 📌 КЛЮЧЕВОЙ ПУНКТ ФИДБЕКА
+        router.refresh();
+        setIsChecking(false);
       }
     }
 
     initAuth();
-  }, [setUser, clearIsAuthenticated]);
+  }, [pathname, router, setUser, clearIsAuthenticated]);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // ⏳ Лоадер на время проверки сессии
+  if (isChecking) {
+    return null;
   }
 
   return <>{children}</>;
