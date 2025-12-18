@@ -1,4 +1,4 @@
-import { fetchNotes } from "@/lib/api/clientApi";
+import { fetchNotes } from "@/lib/api/serverApi";
 import NotesClient from "./Notes.client";
 import {
   QueryClient,
@@ -40,7 +40,7 @@ export async function generateMetadata({
 }
 
 export default async function Notes({ params }: PropsFilter) {
-  const { slug } = await params; // <-- обязательно await
+  const { slug } = await params;
   const tag = slug[0] === "all" ? undefined : slug[0];
 
   const queryClient = new QueryClient();

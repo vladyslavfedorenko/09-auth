@@ -18,30 +18,41 @@ async function getCookieHeader(): Promise<string> {
     .join("; ");
 }
 
+/* ================= NOTES ================= */
+
 export async function fetchNotes(params?: {
   search?: string;
   page?: number;
   tag?: string;
-}): Promise<AxiosResponse<{ notes: Note[]; totalPages: number }>> {
+}): Promise<{ notes: Note[]; totalPages: number }> {
   const cookieHeader = await getCookieHeader();
 
-  return api.get("/notes", {
-    params,
+  const response = await api.get<{ notes: Note[]; totalPages: number }>(
+    "/notes",
+    {
+      params,
+      headers: {
+        Cookie: cookieHeader,
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function fetchNoteById(id: string): Promise<Note> {
+  const cookieHeader = await getCookieHeader();
+
+  const response = await api.get<Note>(`/notes/${id}`, {
     headers: {
       Cookie: cookieHeader,
     },
   });
+
+  return response.data;
 }
 
-export async function fetchNoteById(id: string): Promise<AxiosResponse<Note>> {
-  const cookieHeader = await getCookieHeader();
-
-  return api.get(`/notes/${id}`, {
-    headers: {
-      Cookie: cookieHeader,
-    },
-  });
-}
+/* ================= AUTH ================= */
 
 export async function checkSession(): Promise<AxiosResponse<User | null>> {
   const cookieHeader = await getCookieHeader();
@@ -53,12 +64,16 @@ export async function checkSession(): Promise<AxiosResponse<User | null>> {
   });
 }
 
-export async function getMe(): Promise<AxiosResponse<User>> {
+/* ================= USER ================= */
+
+export async function getMe(): Promise<User> {
   const cookieHeader = await getCookieHeader();
 
-  return api.get<User>("/users/me", {
+  const response = await api.get<User>("/users/me", {
     headers: {
       Cookie: cookieHeader,
     },
   });
+
+  return response.data;
 }

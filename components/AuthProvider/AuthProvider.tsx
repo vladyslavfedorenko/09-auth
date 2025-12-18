@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { checkSession } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
 
@@ -10,7 +10,6 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const setUser = useAuthStore((s) => s.setUser);
@@ -31,14 +30,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       } catch {
         clearIsAuthenticated();
       } finally {
-        // 📌 КЛЮЧЕВОЙ ПУНКТ ФИДБЕКА
-        router.refresh();
+        // ✅ БЕЗ router.refresh()
         setIsChecking(false);
       }
     }
 
     initAuth();
-  }, [pathname, router, setUser, clearIsAuthenticated]);
+  }, [pathname, setUser, clearIsAuthenticated]);
 
   // ⏳ Лоадер на время проверки сессии
   if (isChecking) {

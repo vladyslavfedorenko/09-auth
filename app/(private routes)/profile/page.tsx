@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  const response = await getMe();
-  const user = response.data;
+  const user = await getMe(); // ✅ ТЕПЕРЬ ПРАВИЛЬНО
 
   return (
     <main className={css.mainContent}>
@@ -19,7 +18,6 @@ export default async function ProfilePage() {
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
 
-          {/* ✔ Link вместо <a> */}
           <Link href="/profile/edit" className={css.editProfileButton}>
             Edit Profile
           </Link>

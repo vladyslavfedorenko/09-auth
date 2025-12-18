@@ -15,6 +15,7 @@ export default function EditProfilePage() {
   const setUser = useAuthStore((s) => s.setUser);
 
   const [user, setLocalUser] = useState<User | null>(null);
+
   const [username, setUsername] = useState("");
 
   useEffect(() => {

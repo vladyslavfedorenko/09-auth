@@ -18,12 +18,23 @@ export async function middleware(req: NextRequest) {
 
   let isAuthenticated = Boolean(accessToken);
 
+  // ✅ ВАЖНО: создаём response заранее
+  const response = NextResponse.next();
+
   // 🔹 нет accessToken, но есть refreshToken → пробуем checkSession
   if (!accessToken && refreshToken) {
     try {
-      const response = await checkSession();
+      const sessionResponse = await checkSession();
 
-      if (response.status === 200 && response.data !== null) {
+      // ✅ ПРОБРАСЫВАЕМ set-cookie
+      const setCookieHeader = sessionResponse.headers["set-cookie"];
+      if (setCookieHeader) {
+        setCookieHeader.forEach((cookie) => {
+          response.headers.append("set-cookie", cookie);
+        });
+      }
+
+      if (sessionResponse.status === 200 && sessionResponse.data !== null) {
         isAuthenticated = true;
       }
     } catch {
@@ -41,7 +52,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
